@@ -97,5 +97,6 @@ async def main():
     await application.run_polling()
 
 if __name__ == "__main__":
+    # Просто вызываем асинхронный main, без использования asyncio.run()
     import asyncio
     asyncio.run(main())
