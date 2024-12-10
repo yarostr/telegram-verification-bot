@@ -5,7 +5,7 @@ import asyncio
 # Укажите только bot_token
 bot_token = '8116216134:AAEiir14BK2tYchpAykLkw9shlAnIugqEvo'
 
-# Создаем объект бота
+# Создаем объект бота с использованием bot_token
 app = Client("my_bot", bot_token=bot_token)
 
 # Для управления пользователями в чате
