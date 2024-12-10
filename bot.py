@@ -98,8 +98,8 @@ async def main():
 
 if __name__ == "__main__":
     # Запускаем приложение
-    try:
-        import asyncio
-        asyncio.run(main())  # Запускаем основную функцию
-    except RuntimeError as e:
-        print(f"Ошибка: {e}")
+    from telegram.ext import Application
+
+    # Запускаем приложение без использования asyncio.run()
+    application = Application.builder().token(BOT_TOKEN).build()
+    application.run_polling()
