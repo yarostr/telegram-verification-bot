@@ -1,13 +1,12 @@
 import os
-import time
+import logging
 from dotenv import load_dotenv
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, filters
 from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, ConversationHandler
-import logging
+import time
 
-# Установка логирования
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
+# Настройка логирования
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Загрузка переменных окружения
