@@ -1,8 +1,14 @@
 import os
 import time
 from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, ConversationHandler
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, filters
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, ConversationHandler
+import logging
+
+# Установка логирования
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -95,32 +101,36 @@ def cancel(update: Update, context: CallbackContext):
     return ConversationHandler.END
 
 def main():
-    # Создание апдейтера и диспетчера
-    updater = Updater(BOT_TOKEN)
-    dp = updater.dispatcher
+    try:
+        # Создание апдейтера и диспетчера
+        updater = Updater(BOT_TOKEN)
+        dp = updater.dispatcher
 
-    # Обработчик новых участников
-    dp.add_handler(MessageHandler(Filters.status_update.new_chat_members, new_member))
+        # Обработчик новых участников
+        dp.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_member))
 
-    # Обработчик команды /start
-    dp.add_handler(CommandHandler("start", start_command))
+        # Обработчик команды /start
+        dp.add_handler(CommandHandler("start", start_command))
 
-    # Обработчик сообщений от пользователей
-    dp.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+        # Обработчик сообщений от пользователей
+        dp.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
-    # Обработчик для верификации
-    conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(Filters.regex('^Пройти верификацию$'), verification)],
-        states={
-            VERIFY_CONTACT: [MessageHandler(Filters.contact, contact)],
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-    )
-    dp.add_handler(conv_handler)
+        # Обработчик для верификации
+        conv_handler = ConversationHandler(
+            entry_points=[MessageHandler(filters.Regex('^Пройти верификацию$'), verification)],
+            states={
+                VERIFY_CONTACT: [MessageHandler(filters.CONTACT, contact)],
+            },
+            fallbacks=[CommandHandler('cancel', cancel)],
+        )
+        dp.add_handler(conv_handler)
 
-    # Запуск бота
-    updater.start_polling()
-    updater.idle()
+        # Запуск бота
+        updater.start_polling()
+        updater.idle()
+
+    except Exception as e:
+        logger.error(f"Произошла ошибка: {e}")
 
 if __name__ == "__main__":
     main()
