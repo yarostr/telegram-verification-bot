@@ -1,135 +1,69 @@
-import os
-import logging
-from dotenv import load_dotenv
-from telegram import Update, ReplyKeyboardMarkup, KeyboardButton, filters
-from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, ConversationHandler
-import time
+from pyrogram import Client, filters
+from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
+import asyncio
 
-# Настройка логирования
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+# Ваш bot_token
+bot_token = '8116216134:AAEiir14BK2tYchpAykLkw9shlAnIugqEvo'
 
-# Загрузка переменных окружения
-load_dotenv()
-BOT_TOKEN = os.getenv("BOT_TOKEN")
+# Создаем объект бота
+app = Client("verification_bot", bot_token=bot_token)
 
-# Константа для шага верификации
-VERIFY_CONTACT = range(1)
-
-# Множество для хранения пользователей, которые ещё не прошли верификацию
-unverified_users = set()
-
-# Обработка новых участников
-def new_member(update: Update, context: CallbackContext):
-    for new_user in update.message.new_chat_members:
-        user_id = new_user.id
-        first_name = new_user.first_name
-
-        # Блокируем нового пользователя в чате
-        context.bot.restrict_chat_member(update.message.chat_id, user_id, can_send_messages=False)
-
-        # Отправляем сообщение с упоминанием пользователя
-        update.message.reply_text(
-            f"Привет, [{first_name}](tg://user?id={user_id})! "
-            "Чтобы начать писать в чат, пройди верификацию. Нажми кнопку ниже для начала.",
-            parse_mode="MarkdownV2",
-            reply_markup=ReplyKeyboardMarkup([['Пройти верификацию']], one_time_keyboard=True)
-        )
-
-        # Добавляем пользователя в список не прошедших верификацию
-        unverified_users.add(user_id)
-
-# Обработка сообщений от пользователей
-def handle_message(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    if user_id in unverified_users:
-        update.message.delete()  # Удаляем сообщение пользователя
-        update.message.reply_text(
-            "Чтобы писать в чат, пройдите верификацию. Нажмите кнопку ниже для начала.",
-            reply_markup=ReplyKeyboardMarkup([['Пройти верификацию']], one_time_keyboard=True)
-        )
-
-# Обработка команды /start
-def start_command(update: Update, context: CallbackContext):
-    update.message.reply_text(
-        "Привет! Чтобы пройти верификацию и получить возможность писать в чат, нажмите кнопку ниже.",
-        reply_markup=ReplyKeyboardMarkup([['Пройти верификацию']], one_time_keyboard=True)
-    )
-
-# Начало процесса верификации
-def verification(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-
-    if user_id not in unverified_users:
-        unverified_users.add(user_id)
-
-    update.message.reply_text(
-        "Пожалуйста, отправьте свой контакт для верификации.",
-        reply_markup=ReplyKeyboardMarkup(
-            [[KeyboardButton("Отправить контакт", request_contact=True)]],
-            one_time_keyboard=True
-        )
-    )
-
-    return VERIFY_CONTACT
-
-# Обработка отправки контакта
-def contact(update: Update, context: CallbackContext):
-    user_id = update.message.from_user.id
-    contact = update.message.contact
-
-    if contact:
-        update.message.reply_text("Спасибо! Проверяем вашу верификацию...")
-        time.sleep(10)  # Задержка в 10 секунд для проверки (можно заменить на реальную проверку)
-
-        # Успешная верификация
-        update.message.reply_text("Верификация прошла успешно! Теперь вы можете писать в чат.")
-        
-        # Убираем пользователя из списка не верифицированных
-        if user_id in unverified_users:
-            unverified_users.remove(user_id)
-
-        # Разблокируем пользователя в чате
-        context.bot.restrict_chat_member(update.message.chat_id, user_id, can_send_messages=True)
-
-    return ConversationHandler.END
-
-# Завершение верификации
-def cancel(update: Update, context: CallbackContext):
-    update.message.reply_text("Верификация отменена.")
-    return ConversationHandler.END
-
-def main():
+# Обработчик новых участников в группе
+@app.on_message(filters.new_chat_members)
+async def handle_new_member(client, message):
+    new_member = message.new_chat_members[0]
+    
+    # Блокируем пользователя от отправки сообщений
     try:
-        # Создание апдейтера и диспетчера
-        updater = Updater(BOT_TOKEN)
-        dp = updater.dispatcher
-
-        # Обработчик новых участников
-        dp.add_handler(MessageHandler(filters.StatusUpdate.NEW_CHAT_MEMBERS, new_member))
-
-        # Обработчик команды /start
-        dp.add_handler(CommandHandler("start", start_command))
-
-        # Обработчик сообщений от пользователей
-        dp.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-
-        # Обработчик для верификации
-        conv_handler = ConversationHandler(
-            entry_points=[MessageHandler(filters.Regex('^Пройти верификацию$'), verification)],
-            states={
-                VERIFY_CONTACT: [MessageHandler(filters.CONTACT, contact)],
-            },
-            fallbacks=[CommandHandler('cancel', cancel)],
-        )
-        dp.add_handler(conv_handler)
-
-        # Запуск бота
-        updater.start_polling()
-        updater.idle()
-
+        await message.chat.restrict_member(new_member.id, can_send_messages=False)
     except Exception as e:
-        logger.error(f"Произошла ошибка: {e}")
+        print(f"Ошибка при ограничении пользователя: {e}")
+    
+    # Отправляем сообщение о необходимости верификации
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Пройти верификацию", callback_data="start_verification")]
+    ])
+    
+    await message.chat.send_message(
+        f"Привет, {new_member.first_name}! Для того чтобы иметь возможность писать в чат, нужно пройти верификацию.",
+        reply_markup=keyboard
+    )
 
-if __name__ == "__main__":
-    main()
+# Обработчик нажатия на кнопку
+@app.on_callback_query(filters.regex("start_verification"))
+async def verification_start(client, callback_query):
+    # Отправляем сообщение с инструкцией
+    await callback_query.answer("Отправьте свой контакт для верификации.")
+    
+    # Просим отправить контакт
+    keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("Отправить контакт", request_contact=True)]
+    ])
+    
+    await callback_query.message.edit_text(
+        "Нажмите кнопку ниже и отправьте свой контакт для верификации.",
+        reply_markup=keyboard
+    )
+
+# Обработчик получения контакта
+@app.on_message(filters.contact)
+async def handle_contact(client, message):
+    contact = message.contact
+
+    # Здесь можно проверять контакт, например, на уникальность
+    # Например, сохранение в базу данных для предотвращения повторной верификации
+
+    # Ожидаем 10 секунд перед завершением верификации
+    await asyncio.sleep(10)
+
+    # Подтверждаем успешную верификацию
+    await message.reply(f"Верификация пройдена! Теперь вы можете писать в чат.")
+
+    # Разблокируем пользователя
+    try:
+        await message.chat.restrict_member(message.from_user.id, can_send_messages=True)
+    except Exception as e:
+        print(f"Ошибка при разблокировке пользователя: {e}")
+
+# Запуск бота
+app.run()
