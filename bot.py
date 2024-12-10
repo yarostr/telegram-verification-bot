@@ -21,7 +21,7 @@ async def welcome(update: Update, context: CallbackContext) -> None:
 # Главная функция запуска бота
 async def main() -> None:
     # Убедитесь, что токен правильный
-    application = Application.builder().token('8116216134:AAEiir14BK2tYchpAykLkw9shlAnIugqEvo').build()
+    application = Application.builder().token('8116216134:AAFSt7xt4Fgb1V63eZzZg0hZjWbUhsJnv1Y').build()
 
     # Регистрация обработчиков
     application.add_handler(CommandHandler("start", start))
