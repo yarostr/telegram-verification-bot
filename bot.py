@@ -3,7 +3,7 @@ from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes, MessageHandler, filters, ChatMemberHandler
 
 # Ваш токен бота
-BOT_TOKEN = "8116216134:AAEiir14BK2tYchpAykLkw9shlAnIugqEvo"
+BOT_TOKEN = "8116216134:AAFSt7xt4Fgb1V63eZzZg0hZjWbUhsJnv1Y"
 
 # ID чата, в который нужно отправлять уведомления
 NOTIFY_CHAT_ID = -1002226636763
