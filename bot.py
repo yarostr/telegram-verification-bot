@@ -97,6 +97,11 @@ async def main():
     await application.run_polling()
 
 if __name__ == "__main__":
-    # Просто вызываем асинхронный main, без использования asyncio.run()
-    import asyncio
-    asyncio.run(main())
+    # Проверяем, запущен ли цикл событий, и используем его
+    try:
+        import asyncio
+        loop = asyncio.get_event_loop()
+        loop.create_task(main())  # Добавляем основную задачу в текущий цикл
+        loop.run_forever()  # Даем возможность циклу работать
+    except RuntimeError:
+        asyncio.run(main())  # Если нет активного цикла, запускаем его вручную
